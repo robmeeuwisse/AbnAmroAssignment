@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface GitHubService {
     @Headers(
@@ -12,7 +13,11 @@ interface GitHubService {
         "X-GitHub-Api-Version: 2022-11-28"
     )
     @GET("users/{username}/repos")
-    suspend fun listUserRepos(@Path("username") username: String): List<GitHubRepoResponse>
+    suspend fun listUserRepos(
+        @Path("username") username: String,
+        @Query("page") pageNumber: Int,
+        @Query("per_page") pageSize: Int = 10,
+    ): List<GitHubRepoResponse>
 }
 
 /**
@@ -26,6 +31,8 @@ data class GitHubRepoResponse(
     val id: Long,
     @SerialName("name")
     val name: String,
+    @SerialName("full_name")
+    val fullName: String,
     @SerialName("owner")
     val owner: GitHubRepoOwner,
     @SerialName("private")

@@ -17,7 +17,7 @@ class GitHubServiceTest {
                 .setBody(requireTextResource("/github/users/octocat/repos/list-repos.json"))
         )
 
-        service.listUserRepos("octocat")
+        service.listUserRepos("octocat", pageNumber = 1)
 
         val request = server.takeRequest()
 
@@ -34,12 +34,13 @@ class GitHubServiceTest {
                 .setBody(requireTextResource("/github/users/octocat/repos/list-repos.json"))
         )
 
-        val actual = service.listUserRepos("octocat")
+        val actual = service.listUserRepos("octocat", pageNumber = 1)
 
         val expected = listOf(
             GitHubRepoResponse(
                 id = 1296269,
                 name = "Hello-World",
+                fullName = "octocat/Hello-World",
                 owner = GitHubRepoOwner(
                     avatarUrl = "https://github.com/images/error/octocat_happy.gif",
                 ),
@@ -58,7 +59,9 @@ class GitHubServiceTest {
         MockWebServer().use { server ->
             val service = GitHubServiceFactory(
                 baseUrl = server.url("/").toString(),
-                userAgent = "test-user-agent"
+                token = "github-token",
+                userAgent = "test-user-agent",
+                logHttpTraffic = false,
             ).create()
 
             block(MockWebServerScope(server, service))

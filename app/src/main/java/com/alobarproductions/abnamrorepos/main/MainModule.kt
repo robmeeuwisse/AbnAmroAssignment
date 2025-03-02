@@ -9,6 +9,7 @@ object MainModule {
 
     private val gitHubService = GitHubServiceFactory(
         baseUrl = BuildConfig.GITHUB_BASE_URL,
+        token = BuildConfig.GITHUB_TOKEN,
         userAgent = UserAgent.value,
         logHttpTraffic = BuildConfig.DEBUG,
     ).create()

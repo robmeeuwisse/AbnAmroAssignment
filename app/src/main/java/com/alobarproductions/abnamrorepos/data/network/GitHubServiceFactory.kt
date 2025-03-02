@@ -9,8 +9,9 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 class GitHubServiceFactory(
     private val baseUrl: String,
+    private val token: String?,
     private val userAgent: String,
-    private val logHttpTraffic: Boolean = false,
+    private val logHttpTraffic: Boolean,
 ) {
 
     fun create(): GitHubService = Retrofit.Builder()
@@ -24,6 +25,9 @@ class GitHubServiceFactory(
         OkHttpClient.Builder()
             .addInterceptor(UserAgentHeaderInterceptor(userAgent))
             .apply {
+                if (token != null) {
+                    addInterceptor(AuthorizationTokenInterceptor(token))
+                }
                 if (logHttpTraffic) {
                     addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
                 }

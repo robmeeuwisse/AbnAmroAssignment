@@ -19,6 +19,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GITHUB_BASE_URL", "\"https://api.github.com\"")
+
+        val gitHubToken = properties["com.alobarproductions.abnamrorepos.github.token"]
+        buildConfigField("String", "GITHUB_TOKEN", gitHubToken?.let { "\"$it\"" } ?: "null")
     }
 
     buildTypes {

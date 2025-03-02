@@ -1,9 +1,13 @@
 <resources>
     <string name="app_name">ABN AMRO Repositories</string>
-    <string name="repos_screen_title">GitHub Repositories</string>
-    <string name="repo_visibility_public">Public</string>
-    <string name="repo_visibility_private">Private</string>
-    <string name="repo_private_true">yes</string>
-    <string name="repo_private_false">no</string>
+    <string name="repo_detail_screen_title">Repo Details</string>
+    <string name="repo_details_open_repo_button_text">Open Repository</string>
     <string name="repo_item_repo_private_text">Repository is private: %s</string>
+    <string name="repo_private_false">no</string>
+    <string name="repo_private_true">yes</string>
+    <string name="repo_visibility_text">Repository visibility: %s</string>
+    <string name="repo_visibility_label_private">Private</string>
+    <string name="repo_visibility_label_public">Public</string>
+    <string name="repo_visibility_label_unknown">-</string>
+    <string name="repos_screen_title">GitHub Repositories</string>
 </resources>
