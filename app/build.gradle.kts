@@ -62,7 +62,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.coil3.coil.compose)
     implementation(libs.coil3.coil.network.okhttp)
-    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.squareup.okhttp3.logging.interceptor)
     implementation(libs.squareup.okhttp3.okhttp)
@@ -74,6 +73,7 @@ dependencies {
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
     testImplementation(libs.squareup.okhttp3.mockwebserver)
 
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

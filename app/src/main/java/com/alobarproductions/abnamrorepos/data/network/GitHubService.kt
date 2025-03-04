@@ -20,7 +20,7 @@ interface GitHubService {
     suspend fun listUserRepos(
         @Path("username") username: String,
         @Query("page") pageNumber: Int,
-        @Query("per_page") pageSize: Int = 10,
+        @Query("per_page") pageSize: Int,
     ): List<GitHubRepoResponse>
 }
 

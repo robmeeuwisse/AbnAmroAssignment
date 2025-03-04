@@ -17,7 +17,7 @@ class GitHubServiceTest {
                 .setBody(requireTextResource("/github/users/octocat/repos/list-repos.json"))
         )
 
-        service.listUserRepos("octocat", pageNumber = 1)
+        service.listUserRepos("octocat", pageNumber = 1, pageSize = 10)
 
         val request = server.takeRequest()
 
@@ -34,7 +34,7 @@ class GitHubServiceTest {
                 .setBody(requireTextResource("/github/users/octocat/repos/list-repos.json"))
         )
 
-        val actual = service.listUserRepos("octocat", pageNumber = 1)
+        val actual = service.listUserRepos("octocat", pageNumber = 1, pageSize = 10)
 
         val expected = listOf(
             GitHubRepoResponse(

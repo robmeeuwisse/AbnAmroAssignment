@@ -15,17 +15,16 @@ internal class InternalReposRepository(
     private val reposDao: ReposDao,
 ) : ReposRepository {
 
-    override suspend fun getRepos(offset: Int): List<Repo> {
+    override suspend fun getRepos(offset: Int, limit: Int): List<Repo> {
         require(offset >= 0)
-        val limit = 10
         return buildList {
             val cachedRepos = reposDao
                 .readRepos(offset = offset, limit = limit)
                 .map(::toDomain)
             addAll(cachedRepos)
             if (size < limit) {
-                val githubPageSize = 10
-                val githubPageNumber = (offset / githubPageSize) + 1
+                val githubPageSize = limit
+                val githubPageNumber = (offset + size) / githubPageSize + 1
                 val fetchedRepos = gitHubService.listUserRepos(
                     username = AbnAmroGitHubUsername,
                     pageNumber = githubPageNumber,

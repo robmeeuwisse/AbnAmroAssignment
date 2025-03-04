@@ -1,7 +1,7 @@
 package com.alobarproductions.abnamrorepos.core
 
 interface ReposRepository {
-    suspend fun getRepos(offset: Int): List<Repo>
+    suspend fun getRepos(offset: Int, limit: Int = 10): List<Repo>
     suspend fun getById(repoId: Long): Repo
     suspend fun deleteAll()
 }
