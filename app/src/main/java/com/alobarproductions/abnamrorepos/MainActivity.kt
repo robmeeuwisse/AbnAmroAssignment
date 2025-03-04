@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import com.alobarproductions.abnamrorepos.ui.repos.ReposNavigation
+import com.alobarproductions.abnamrorepos.ui.util.LocalAppContainer
 
 class MainActivity : ComponentActivity() {
 
@@ -12,7 +14,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ReposNavigation()
+            CompositionLocalProvider(
+                LocalAppContainer provides application.appContainer
+            ) {
+                ReposNavigation()
+            }
         }
     }
 }

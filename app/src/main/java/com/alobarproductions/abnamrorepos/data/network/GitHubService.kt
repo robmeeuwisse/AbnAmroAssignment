@@ -8,11 +8,15 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface GitHubService {
+
+    /**
+     * List a batch of repositories ordered by full_name
+     */
     @Headers(
         "Accept: application/vnd.github+json",
         "X-GitHub-Api-Version: 2022-11-28"
     )
-    @GET("users/{username}/repos")
+    @GET("users/{username}/repos?sort=full_name")
     suspend fun listUserRepos(
         @Path("username") username: String,
         @Query("page") pageNumber: Int,

@@ -1,22 +1,29 @@
 package com.alobarproductions.abnamrorepos.ui.repos.list
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,43 +33,80 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alobarproductions.abnamrorepos.R
 import com.alobarproductions.abnamrorepos.core.Repo
-import com.alobarproductions.abnamrorepos.main.MainModule
+import com.alobarproductions.abnamrorepos.core.ReposRepository
 import com.alobarproductions.abnamrorepos.ui.AbnAmroShield
 import com.alobarproductions.abnamrorepos.ui.theme.AbnAmroReposTheme
+import com.alobarproductions.abnamrorepos.ui.util.LocalAppContainer
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class RepoListViewModel(
-    private val getReposByPage: suspend (pageNumber: Int) -> List<Repo> = MainModule.reposRepository::getByPage,
+    private val getRepos: suspend (offset: Int) -> List<Repo>,
+    private val refreshRepos: suspend () -> Unit,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    private var lastPageNumber = 0
-
-    fun onLaunched() {
-        onLoadMore()
-    }
+    private var loadMoreJob: Job? = null
+    private var refreshJob: Job? = null
 
     fun onLoadMore() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoading = true,
-            )
-            val newPage = getReposByPage(++lastPageNumber)
-            val oldRepos = _uiState.value.repos
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                repos = oldRepos + newPage,
-            )
+        if (loadMoreJob?.isActive == true) return
+        loadMoreJob = viewModelScope.launch(ioDispatcher) {
+            try {
+                if (_uiState.value.hasLoadedAll) return@launch
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true,
+                    hasError = false,
+                )
+                val currentRepos = _uiState.value.repos
+                val moreRepos = getRepos(currentRepos.size)
+                val newRepos = (currentRepos + moreRepos).distinctBy { it.id }
+                _uiState.value = _uiState.value.copy(
+                    hasLoadedAll = moreRepos.isEmpty(),
+                    isLoading = false,
+                    hasError = false,
+                    repos = newRepos,
+                )
+            } catch (_: Throwable) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    hasError = true,
+                )
+            }
+        }
+    }
+
+    fun onRefresh() {
+        if (loadMoreJob?.isActive == true) return
+        if (refreshJob?.isActive == true) return
+        refreshJob = viewModelScope.launch(ioDispatcher) {
+            try {
+                _uiState.value = UiState(
+                    isLoading = true,
+                )
+                refreshRepos()
+                onLoadMore()
+            } catch (_: Throwable) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    hasError = true,
+                )
+            }
         }
     }
 
     data class UiState(
+        val hasLoadedAll: Boolean = false,
         val isLoading: Boolean = false,
+        val hasError: Boolean = false,
         val repos: List<Repo> = emptyList(),
     )
 }
@@ -70,16 +114,23 @@ class RepoListViewModel(
 @Composable
 fun RepoListScreen(
     onRepoClick: (repoId: Long) -> Unit,
+    reposRepository: ReposRepository = LocalAppContainer.current.reposRepository,
 ) {
-    val viewModel: RepoListViewModel = viewModel()
+    val viewModel: RepoListViewModel = viewModel {
+        RepoListViewModel(
+            getRepos = reposRepository::getRepos,
+            refreshRepos = reposRepository::deleteAll,
+        )
+    }
     val uiState by viewModel.uiState.collectAsState()
     RepoListScreen(
         uiState = uiState,
         onRepoClick = onRepoClick,
         onLoadMore = viewModel::onLoadMore,
+        onRefresh = viewModel::onRefresh,
     )
     LaunchedEffect(Unit) {
-        viewModel.onLaunched()
+        viewModel.onLoadMore()
     }
 }
 
@@ -88,10 +139,11 @@ private fun RepoListScreen(
     uiState: RepoListViewModel.UiState,
     onRepoClick: (repoId: Long) -> Unit,
     onLoadMore: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        topBar = { RepoListTopBar() },
+        topBar = { RepoListTopBar(onRefresh) },
     ) { innerPadding ->
         RepoListContent(
             modifier = Modifier
@@ -106,15 +158,25 @@ private fun RepoListScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RepoListTopBar() {
+private fun RepoListTopBar(
+    onRefresh: () -> Unit,
+) {
     TopAppBar(
-        title = { Text(stringResource(R.string.repos_screen_title)) },
+        title = { Text(stringResource(R.string.repo_list_screen_title)) },
         navigationIcon = {
             AbnAmroShield(
                 modifier = Modifier
                     .padding(12.dp)
                     .size(24.dp),
             )
+        },
+        actions = {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = stringResource(R.string.repo_list_refresh_repos_action_description),
+                )
+            }
         },
     )
 }
@@ -132,7 +194,7 @@ private fun RepoListContent(
     ) {
         itemsIndexed(
             items = uiState.repos,
-            key = { index, repo -> repo.id },
+            key = { _, repo -> repo.id },
         ) { index, repo ->
             if (index == uiState.repos.lastIndex) {
                 onLoadMore()
@@ -144,12 +206,26 @@ private fun RepoListContent(
         }
 
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (uiState.isLoading) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(5.dp)
+                    )
+                }
+                if (uiState.hasError) {
+                    Text(
+                        text = stringResource(R.string.repo_list_loading_error_message),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    TextButton(
+                        onClick = onLoadMore,
+                        content = { Text(stringResource(R.string.repo_list_loading_retry_button_text)) },
+                    )
                 }
             }
         }
@@ -163,6 +239,7 @@ private fun Preview() {
         RepoListScreen(
             uiState = RepoListViewModel.UiState(
                 isLoading = true,
+                hasError = true,
                 repos = List(2) { index ->
                     Repo(
                         id = index.toLong(),
@@ -177,7 +254,8 @@ private fun Preview() {
                 }
             ),
             onRepoClick = { println("onRepoClick") },
-            onLoadMore = { println("onLoadMore") }
+            onLoadMore = { println("onLoadMore") },
+            onRefresh = { println("onRefresh") },
         )
     }
 }

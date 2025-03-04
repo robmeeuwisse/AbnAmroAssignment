@@ -35,15 +35,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.alobarproductions.abnamrorepos.R
 import com.alobarproductions.abnamrorepos.core.Repo
-import com.alobarproductions.abnamrorepos.main.MainModule
+import com.alobarproductions.abnamrorepos.core.ReposRepository
 import com.alobarproductions.abnamrorepos.ui.theme.AbnAmroReposTheme
+import com.alobarproductions.abnamrorepos.ui.util.LocalAppContainer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class RepoDetailViewModel(
     private val repoId: Long,
-    private val getRepoById: suspend (Long) -> Repo = MainModule.reposRepository::getById,
+    private val getRepoById: suspend (Long) -> Repo,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState(null))
@@ -68,9 +69,13 @@ fun RepoDetailScreen(
     repoId: Long,
     onBackClick: () -> Unit,
     onOpenRepoClick: (htmlUrl: String) -> Unit,
+    reposRepository: ReposRepository = LocalAppContainer.current.reposRepository,
 ) {
     val viewModel = viewModel(key = "$repoId") {
-        RepoDetailViewModel(repoId)
+        RepoDetailViewModel(
+            repoId = repoId,
+            getRepoById = reposRepository::getById,
+        )
     }
     val uiState by viewModel.uiState.collectAsState()
     RepoDetailScreen(
@@ -178,7 +183,7 @@ private fun RepoDetailContent(
                     when (repo.visibility) {
                         Repo.Visibility.Public -> R.string.repo_visibility_label_public
                         Repo.Visibility.Private -> R.string.repo_visibility_label_private
-                        Repo.Visibility.Unknown -> R.string.repo_visibility_label_unknown
+                        Repo.Visibility.Unset -> R.string.repo_visibility_label_unknown
                     }
                 )
             ),
@@ -200,7 +205,7 @@ private fun RepoDetailContent(
             modifier = Modifier.padding(vertical = 10.dp),
             onClick = { onOpenRepoClick(repo.htmlUrl) },
         ) {
-            Text(text = stringResource(R.string.repo_details_open_repo_button_text))
+            Text(text = stringResource(R.string.repo_detail_open_repo_button_text))
         }
     }
 }

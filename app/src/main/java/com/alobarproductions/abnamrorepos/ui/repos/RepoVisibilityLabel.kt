@@ -27,7 +27,7 @@ fun RepoVisibilityLabel(
     val textRes = when (visibility) {
         Repo.Visibility.Public -> R.string.repo_visibility_label_public
         Repo.Visibility.Private -> R.string.repo_visibility_label_private
-        Repo.Visibility.Unknown -> null
+        Repo.Visibility.Unset -> null
     }
     if (textRes != null) {
         Label(stringResource(textRes))
@@ -72,7 +72,7 @@ private fun Preview() {
         ) {
             RepoVisibilityLabel(Repo.Visibility.Public)
             RepoVisibilityLabel(Repo.Visibility.Private)
-            RepoVisibilityLabel(Repo.Visibility.Unknown) // Renders as gone
+            RepoVisibilityLabel(Repo.Visibility.Unset) // Renders as gone
         }
     }
 }
